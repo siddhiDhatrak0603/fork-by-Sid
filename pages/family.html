@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report Missing Family Member - DisasterX</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <style>
+        body.dark-mode {
+            background-color: #121212;
+            color: #f8f9fa;
+        }
+
+        .dark-mode .card {
+            background-color: #1e1e1e;
+            color: #fff;
+        }
+
+        .dark-mode .navbar {
+            background-color: #1f1f1f !important;
+        }
+
+        .dark-mode .navbar .navbar-brand {
+            color: #fff;
+        }
+    </style>
+
+   
+    <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm py-3">
+        <div class="container d-flex justify-content-between align-items-center">
+            <div style="width:100px;"></div>            
+            <h1 class="navbar-brand fw-bold mb-0 text-center flex-grow-1">
+                FAMILY IDENTIFICATION TOOL
+            </h1>
+            <button id="themeToggle" class="btn btn-sm btn-outline-secondary">
+                🌙 Dark Mode
+            </button>
+        </div>
+    </nav>
+
+
+
+    
+    <main class="container my-4">
+        <div class="card shadow p-4">
+            <h3 class="mb-4">REPORT A MISSING FAMILY MEMBER</h3>
+            <form id="reportForm">
+
+                
+                <h5 class="mb-3 text-primary">REPORTER INFORMATION</h5>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Your Name</label>
+                        <input type="text" class="form-control" id="reporterName" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Your Phone Number</label>
+                        <input type="text" class="form-control" id="reporterPhone" placeholder="+91 9876543210"
+                            required>
+                    </div>
+                </div>
+
+                
+                <h5 class="mb-3 text-danger">LOST PERSON INFORMATION</h5>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" class="form-control" id="nameInput" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Age</label>
+                        <input type="number" class="form-control" id="ageInput" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Gender</label>
+                        <select class="form-select" id="genderInput" required>
+                            <option value="">Select...</option>
+                            <option>Male</option>
+                            <option>Female</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Last Seen Location</label>
+                        <input type="text" class="form-control" id="locationInput" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" id="statusInput" required>
+                            <option value="Missing">Missing</option>
+                            <option value="Found">Found</option>
+                            <option value="Injured">Injured</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Blood Group</label>
+                        <select class="form-select" id="bloodGroupInput">
+                            <option value="">Not Known</option>
+                            <option>A+</option>
+                            <option>A-</option>
+                            <option>B+</option>
+                            <option>B-</option>
+                            <option>O+</option>
+                            <option>O-</option>
+                            <option>AB+</option>
+                            <option>AB-</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Lost Person Phone (Optional)</label>
+                        <input type="text" class="form-control" id="lostPhone" placeholder="+91 9876543210">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Upload Recent Photo (Optional)</label>
+                        <input type="file" class="form-control" id="photoInput" accept="image/*">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-danger mt-3">Submit Report</button>
+            </form>
+        </div>
+    </main>
+
+    <!-- Firebase Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDyL2xbz6shEdgd93w9LLu-xjiEilDONIA",
+            authDomain: "family-identification-tool.firebaseapp.com",
+            projectId: "family-identification-tool",
+            storageBucket: "family-identification-tool.appspot.com",
+            messagingSenderId: "482977845070",
+            appId: "1:482977845070:web:5f5c66b3327a662cabd81f",
+            measurementId: "G-0K62CJ74JV"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+
+        const form = document.getElementById("reportForm");
+
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const reporterName = document.getElementById("reporterName").value.trim();
+            const reporterPhone = document.getElementById("reporterPhone").value.trim();
+            const name = document.getElementById("nameInput").value.trim();
+            const age = document.getElementById("ageInput").value.trim();
+            const gender = document.getElementById("genderInput").value;
+            const location = document.getElementById("locationInput").value.trim();
+            const status = document.getElementById("statusInput").value;
+            const bloodGroup = document.getElementById("bloodGroupInput").value;
+            const lostPhone = document.getElementById("lostPhone").value.trim();
+            const photoFile = document.getElementById("photoInput").files[0];
+
+            let photoUrl = "";
+            if (photoFile) {
+                const photoRef = ref(storage, "familyReports/" + Date.now() + "_" + photoFile.name);
+                await uploadBytes(photoRef, photoFile);
+                photoUrl = await getDownloadURL(photoRef);
+            }
+
+            await addDoc(collection(db, "familyReports"), {
+                reporterName,
+                reporterPhone: reporterPhone || null,
+                name,
+                age,
+                gender,
+                lastSeen: location,
+                status,
+                bloodGroup: bloodGroup || "Not Provided",
+                lostPhone: lostPhone || null,
+                photoUrl,
+                createdAt: serverTimestamp()
+            });
+
+            alert("✅ Report submitted successfully!");
+            form.reset();
+        });
+
+        const themeToggle = document.getElementById("themeToggle");
+        themeToggle.addEventListener("click", () => {
+            document.body.classList.toggle("dark-mode");
+            if (document.body.classList.contains("dark-mode")) {
+                themeToggle.textContent = "☀️ Light Mode";
+            } else {
+                themeToggle.textContent = "🌙 Dark Mode";
+            }
+        });
+
+        
+    </script>
+</body>
+
+</html>
